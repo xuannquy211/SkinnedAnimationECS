@@ -1,3 +1,4 @@
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Deformations;
 using Unity.Entities;
@@ -10,71 +11,50 @@ using Unity.Transforms;
 [WorldSystemFilter(WorldSystemFilterFlags.Default | WorldSystemFilterFlags.Editor)]
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 [UpdateBefore(typeof(DeformationsInPresentation))]
-partial class CalculateSkinMatrixSystemBase : SystemBase
+[BurstCompile]
+public partial struct CalculateSkinMatrixSystem : ISystem
 {
-    EntityQuery m_BoneEntityQuery;
-    EntityQuery m_RootEntityQuery;
+    [ReadOnly] ComponentLookup<LocalToWorld> m_GlobalTransformLookup;
 
-    protected override void OnCreate()
+    public void OnCreate(ref SystemState state)
     {
-        m_BoneEntityQuery = GetEntityQuery(
-                ComponentType.ReadOnly<LocalToWorld>(),
-                ComponentType.ReadOnly<BoneTag>()
-            );
-
-        m_RootEntityQuery = GetEntityQuery(
-                ComponentType.ReadOnly<LocalToWorld>(),
-                ComponentType.ReadOnly<RootTag>()
-            );
+        m_GlobalTransformLookup = state.GetComponentLookup<LocalToWorld>(true);
     }
 
-    protected override void OnUpdate()
+    public void OnUpdate(ref SystemState state)
     {
-        var boneCount = m_BoneEntityQuery.CalculateEntityCount();
-        var bonesLocalToWorld = new NativeParallelHashMap<Entity, float4x4>(boneCount, Allocator.TempJob);
-        var bonesLocalToWorldParallel = bonesLocalToWorld.AsParallelWriter();
+        m_GlobalTransformLookup.Update(ref state);
+        var parallelWriter = m_GlobalTransformLookup;
 
-        var dependency = Dependency;
-
-        var bone = Entities
-            .WithName("GatherBoneTransforms")
-            .WithAll<BoneTag>()
-            .ForEach((Entity entity, in LocalToWorld localToWorld) =>
+        var job = new CalculateSkinMatricesJob
         {
-            bonesLocalToWorldParallel.TryAdd(entity, localToWorld.Value);
-        }).ScheduleParallel(dependency);
+            GlobalTransformLookup = parallelWriter
+        };
+        
+        state.Dependency = job.ScheduleParallel(state.Dependency);
+    }
 
-        var rootCount = m_RootEntityQuery.CalculateEntityCount();
-        var rootWorldToLocal = new NativeParallelHashMap<Entity, float4x4>(rootCount, Allocator.TempJob);
-        var rootWorldToLocalParallel = rootWorldToLocal.AsParallelWriter();
+    [BurstCompile]
+    partial struct CalculateSkinMatricesJob : IJobEntity
+    {
+        [ReadOnly] public ComponentLookup<LocalToWorld> GlobalTransformLookup;
 
-        var root = Entities
-            .WithName("GatherRootTransforms")
-            .WithAll<RootTag>()
-            .ForEach((Entity entity, in LocalToWorld localToWorld) =>
+        public void Execute(ref DynamicBuffer<SkinMatrix> skinMatrices, in DynamicBuffer<BindPose> bindPoses, in DynamicBuffer<BoneEntity> bones, in RootEntity root)
         {
-            rootWorldToLocalParallel.TryAdd(entity, math.inverse(localToWorld.Value));
-        }).ScheduleParallel(dependency);
-
-        dependency = JobHandle.CombineDependencies(bone, root);
-
-        dependency = Entities
-            .WithName("CalculateSkinMatrices")
-            .WithReadOnly(bonesLocalToWorld)
-            .WithReadOnly(rootWorldToLocal)
-            .ForEach((ref DynamicBuffer<SkinMatrix> skinMatrices, in DynamicBuffer<BindPose> bindPoses, in DynamicBuffer<BoneEntity> bones, in RootEntity root) =>
-        {
-            if (!bonesLocalToWorld.ContainsKey(root.Value) || bones.Length != skinMatrices.Length)
+            if (!GlobalTransformLookup.HasComponent(root.Value) || bones.Length != skinMatrices.Length)
                 return;
 
-            var rootMatrixInv = rootWorldToLocal[root.Value];
+            var rootMatrix = GlobalTransformLookup[root.Value].Value;
+            var rootMatrixInv = math.inverse(rootMatrix);
+
             for (int i = 0; i < skinMatrices.Length; i++)
             {
                 var boneEntity = bones[i].Value;
-                if (!bonesLocalToWorld.ContainsKey(boneEntity))
+                if (!GlobalTransformLookup.HasComponent(boneEntity))
                     continue;
 
-                var matrix = math.mul(rootMatrixInv, bonesLocalToWorld[boneEntity]);
+                var boneMatrix = GlobalTransformLookup[boneEntity].Value;
+                var matrix = math.mul(rootMatrixInv, boneMatrix);
                 matrix = math.mul(matrix, bindPoses[i].Value);
 
                 skinMatrices[i] = new SkinMatrix
@@ -82,12 +62,6 @@ partial class CalculateSkinMatrixSystemBase : SystemBase
                     Value = new float3x4(matrix.c0.xyz, matrix.c1.xyz, matrix.c2.xyz, matrix.c3.xyz)
                 };
             }
-        }).ScheduleParallel(dependency);
-
-        Dependency = JobHandle.CombineDependencies(
-            bonesLocalToWorld.Dispose(dependency),
-            rootWorldToLocal.Dispose(dependency)
-        );
+        }
     }
 }
-

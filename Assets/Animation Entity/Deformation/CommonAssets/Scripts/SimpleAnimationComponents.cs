@@ -1,9 +1,8 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
-internal struct BoneTag : IComponentData { }
-
-internal struct RootTag : IComponentData { }
+// internal struct BoneTag : IComponentData { }
+// internal struct RootTag : IComponentData { }
 
 internal struct BoneEntity : IBufferElementData
 {

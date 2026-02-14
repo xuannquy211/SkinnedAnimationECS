@@ -55,11 +55,13 @@ public partial class ComputeSkinMatricesBakingSystem : SystemBase {
             if (!initTrigger.ValueRO) continue;
 
             ecb.AddComponent<LocalToWorld>(rootEntity.ValueRO.Value);
-            ecb.AddComponent<RootTag>(rootEntity.ValueRO.Value);
+            // ecb.AddComponent<LocalToWorld>(rootEntity.ValueRO.Value);
+            // RootTag and BoneTag are no longer needed
+            // ecb.AddComponent<RootTag>(rootEntity.ValueRO.Value);
 
             for (int boneIndex = 0; boneIndex < bones.Length; ++boneIndex) {
-                var boneEntity = bones[boneIndex].Value;
-                ecb.AddComponent(boneEntity, new BoneTag());
+                // var boneEntity = bones[boneIndex].Value;
+                // ecb.AddComponent(boneEntity, new BoneTag());
             }
 
             initTrigger.ValueRW = false;
