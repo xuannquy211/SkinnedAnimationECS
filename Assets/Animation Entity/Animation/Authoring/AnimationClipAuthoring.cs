@@ -4,26 +4,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-public enum PropertyType {
-    PositionX,
-    PositionY,
-    PositionZ,
 
-    RotationX,
-    RotationY,
-    RotationZ,
-    RotationW,
-
-    EulerX,
-    EulerY,
-    EulerZ,
-
-    ScaleX,
-    ScaleY,
-    ScaleZ,
-
-    Unknown
-}
 
 [System.Serializable]
 public struct AnimationPropertyCurve {
