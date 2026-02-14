@@ -100,6 +100,7 @@ public struct AnimationClipEntity {
 
 public class AnimationClipAuthoring : MonoBehaviour {
     public AnimationClip[] animationClips;
+    public float defaultCrossFadeDuration = 0.25f;
     [HideInInspector] public AnimationClipEntity[] animationClipEntities;
 
 #if UNITY_EDITOR

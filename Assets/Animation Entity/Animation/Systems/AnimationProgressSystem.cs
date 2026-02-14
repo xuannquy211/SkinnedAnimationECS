@@ -13,7 +13,8 @@ public partial struct AnimationProgressSystem : ISystem {
             DeltaTime = SystemAPI.Time.DeltaTime,
             LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false),
             PostTransformMatrixLookup = SystemAPI.GetComponentLookup<PostTransformMatrix>(false),
-            AnimationBoneLengthLookup = SystemAPI.GetComponentLookup<AnimationBoneLength>(false)
+            AnimationBoneLengthLookup = SystemAPI.GetComponentLookup<AnimationBoneLength>(false),
+            AnimationCrossFadeLookup = SystemAPI.GetComponentLookup<AnimationCrossFade>(true)
         };
         state.Dependency = job.ScheduleParallel(state.Dependency);
     }
@@ -26,7 +27,11 @@ public partial struct AnimationProgressSystem : ISystem {
         [NativeDisableParallelForRestriction] public ComponentLookup<AnimationBoneLength> AnimationBoneLengthLookup;
         // Actually, with Skeleton Architecture, we use Root Time.
         
+        [ReadOnly] public ComponentLookup<AnimationCrossFade> AnimationCrossFadeLookup;
+
         private void Execute(Entity entity, ref AnimationRootTime rootTime, in AnimationClipIndex clipIndex, in AnimationClipBlobReference blobRef, in DynamicBuffer<BoneBuffer> boneBuffer) {
+            
+            if (AnimationCrossFadeLookup.HasComponent(entity) && AnimationCrossFadeLookup.IsComponentEnabled(entity)) return;
             
             if (!blobRef.Blob.IsCreated) return;
             

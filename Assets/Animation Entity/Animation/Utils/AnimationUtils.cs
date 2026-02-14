@@ -36,4 +36,47 @@ public static class AnimationUtils
         ecb.Playback(em);
         ecb.Dispose();
     }
+
+    public static void PlayCross(this Entity e, int index, float duration = -1)
+    {
+        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+        if (em.HasComponent<AnimationCrossFade>(e))
+        {
+            var crossFade = em.GetComponentData<AnimationCrossFade>(e);
+            
+            // Set duration
+            if (duration < 0)
+            {
+                if (em.HasComponent<AnimationCrossSecond>(e))
+                {
+                    crossFade.Duration = em.GetComponentData<AnimationCrossSecond>(e).Value;
+                }
+                else
+                {
+                    crossFade.Duration = 0.25f; // Default fallback
+                }
+            }
+            else
+            {
+                crossFade.Duration = duration;
+            }
+
+            crossFade.TargetAnimationIndex = index;
+            crossFade.Timer = 0f;
+            crossFade.Initialized = false; // Trigger capture of current pose
+
+            ecb.SetComponent(e, crossFade);
+            ecb.SetComponentEnabled<AnimationCrossFade>(e, true);
+        }
+        else
+        {
+            // Fallback for immediate play if component missing
+            SetAnimation(e, index);
+        }
+
+        ecb.Playback(em);
+        ecb.Dispose();
+    }
 }

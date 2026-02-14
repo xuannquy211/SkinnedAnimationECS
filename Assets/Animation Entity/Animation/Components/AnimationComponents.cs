@@ -98,3 +98,23 @@ public struct SkeletonInitialized : IComponentData, IEnableableComponent
 // public struct PreviousAnimationClipIndex ...
 // public struct PreviousAnimationRootTime ...
 // public struct AnimationTime ...
+
+public struct AnimationCrossSecond : IComponentData
+{
+    public float Value;
+}
+
+public struct AnimationCrossFade : IComponentData, IEnableableComponent
+{
+    public int TargetAnimationIndex;
+    public float Timer;
+    public float Duration;
+    public bool Initialized;
+}
+
+public struct CrossFadeBoneData : IBufferElementData
+{
+    public float3 Position;
+    public quaternion Rotation;
+    public float3 Scale;
+}

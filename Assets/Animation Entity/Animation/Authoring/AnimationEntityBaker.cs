@@ -94,6 +94,11 @@ public class AnimationEntityBaker : Baker<AnimationClipAuthoring>
         AddComponent<AnimationClipIndex>(entity);
         AddComponent<AnimationRootTime>(entity);
         
+        AddComponent(entity, new AnimationCrossSecond { Value = authoring.defaultCrossFadeDuration });
+        AddComponent(entity, new AnimationCrossFade { Initialized = false });
+        SetComponentEnabled<AnimationCrossFade>(entity, false);
+        AddBuffer<CrossFadeBoneData>(entity);
+        
         // Removed obsolete components:
         // PreviousAnimationClipIndex, PreviousAnimationRootTime, AnimationBoneCurveInitTrigger
         // AnimationTime, AnimationBoneLength are also not added here anymore.
