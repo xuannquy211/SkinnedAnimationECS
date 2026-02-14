@@ -13,7 +13,7 @@ public partial struct OnChangeAnimationIndexSystem : ISystem
 
         foreach (var (animatorState, prevAnimatorState, clips, bones) in SystemAPI
                      .Query<RefRO<AnimationClipIndex>, RefRW<PreviousAnimationClipIndex>, DynamicBuffer<AnimationClipBlobReference>,
-                         DynamicBuffer<BoneBuffer>>()) {
+                         DynamicBuffer<BoneBuffer>>().WithChangeFilter<AnimationClipIndex>()) {
             
             if (animatorState.ValueRO.Value == prevAnimatorState.ValueRO.Value)
                 continue;
@@ -76,7 +76,7 @@ public partial struct OnChangeAnimationTimeSystem : ISystem
 
         foreach (var (animatorState, clips, bones, time, prevTime) in SystemAPI
                      .Query<RefRO<AnimationClipIndex>, DynamicBuffer<AnimationClipBlobReference>,
-                         DynamicBuffer<BoneBuffer>, RefRO<AnimationRootTime>, RefRW<PreviousAnimationRootTime>>()) {
+                         DynamicBuffer<BoneBuffer>, RefRO<AnimationRootTime>, RefRW<PreviousAnimationRootTime>>().WithChangeFilter<AnimationRootTime>()) {
             
             if (Mathf.Abs(time.ValueRO.Value - prevTime.ValueRO.Value) < Mathf.Epsilon)
                 continue;
