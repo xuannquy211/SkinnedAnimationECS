@@ -8,7 +8,11 @@ using Unity.Collections;
 [UpdateBefore(typeof(TransformSystemGroup))]
 [UpdateBefore(typeof(AnimationProgressSystem))] 
 public partial struct AnimationCrossFadeSystem : ISystem {
-    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<AnimationCrossFade>();
+    }
+
     public void OnUpdate(ref SystemState state) {
         var job = new AnimationCrossFadeJob { 
             DeltaTime = SystemAPI.Time.DeltaTime,

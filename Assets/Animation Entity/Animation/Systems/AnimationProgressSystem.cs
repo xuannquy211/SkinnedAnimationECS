@@ -7,7 +7,11 @@ using Unity.Collections;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct AnimationProgressSystem : ISystem {
-    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<AnimationClipIndex>();
+    }
+
     public void OnUpdate(ref SystemState state) {
         var job = new AnimationProgressJob { 
             DeltaTime = SystemAPI.Time.DeltaTime,
@@ -63,7 +67,6 @@ public partial struct AnimationProgressSystem : ISystem {
                 var transform = LocalTransformLookup[boneEntity];
                 var position = transform.Position;
                 var rotation = transform.Rotation;
-                var scale = 1f; // Default scale logic - wait, PostTransformMatrix handles scale usually.
                 
                 bool positionChange = false;
                 bool rotationChange = false;
